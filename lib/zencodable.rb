@@ -1,24 +1,28 @@
+require 'zencoder'
+
 module Zencodable
+  extend ActiveSupport::Concern
 
-  class << self
-    def self.included base
-      base.extend ClassMethods
-      base.class_attribute :encoder_options
+  included do
+    #logger.warn "Bytes move down a wire. The codec is available. A video plays."
+  end
+
+  module ClassMethods
+
+    def has_video_encodings name, options = {}
+
+      has_many :video_files, :dependent => :destroy
+      has_many :video_thumbnails, :dependent => :destroy
+
+      before_save :create_job
+
+      #before_destroy :prepare_for_destroy
+      #after_destroy :destroy_attached_files
+
+      class_attribute :encoder_definitions
+      (self.encoder_definitions ||= {})[name] = options
     end
 
-    module ClassMethods
-
-      def has_video_encodings name, options = {}
-        include InstanceMethods
-
-        before_save :create_job
-
-        #before_destroy :prepare_for_destroy
-        #after_destroy :destroy_attached_files
-        (self.encoder_definitions ||= {})[name] = options
-      end
-
-    end
   end
 
   module InstanceMethods
@@ -81,6 +85,13 @@ module Zencodable
         end
       end
 
+      attr_accessor :id
+
+      def initialize(id)
+        @id = id
+        @job_detail = {}
+      end
+
       def details
         if @job_detail.empty? and @id
           response = self.class.details @id
@@ -139,7 +150,7 @@ module Zencodable
       end
 
       def self.build_encoder_output_options(origin, definitions)
-        
+
         s3_url = definitions[:s3_url] # TODO interpolate like paperclip
 
         formats = definitions[:formats] || [:ogg]
@@ -152,8 +163,8 @@ module Zencodable
         defaults = defaults.merge(definitions[:options]) if definitions[:options]
 
         if definitions[:thumbnails]
-          defaults[:thumbnails] = {:aspect_mode => 'crop', 
-                                   :base_url => s3_url, 
+          defaults[:thumbnails] = {:aspect_mode => 'crop',
+                                   :base_url => s3_url,
                                    :size => size
                                   }.merge(definitions[:thumbnails])
         end
@@ -166,3 +177,9 @@ module Zencodable
 
   end
 end
+
+
+class ActiveRecord::Base
+  include Zencodable
+end
+
