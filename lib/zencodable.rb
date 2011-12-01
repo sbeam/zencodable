@@ -5,22 +5,28 @@ module Zencodable
 
   included do
     #logger.warn "Bytes move down a wire. The codec is available. A video plays."
+    class_attribute :encoder_definitions
+    class_attribute :encoder_target_association
+    class_attribute :encoder_thumbnails_association
   end
 
   module ClassMethods
 
-    def has_video_encodings name, options = {}
+    def has_video_encodings target_association, options = {}
+      self.encoder_definitions = options
+      self.encoder_target_association = target_association
 
-      has_many :video_files, :dependent => :destroy
-      has_many :video_thumbnails, :dependent => :destroy
+      has_many self.encoder_target_association, :dependent => :destroy
+
+      unless options[:thumbnails].blank?
+        self.encoder_thumbnails_association = "#{target_association.to_s.singularize}_thumbnails".to_sym
+        has_many self.encoder_thumbnails_association, :dependent => :destroy
+      end
 
       before_save :create_job
 
       #before_destroy :prepare_for_destroy
       #after_destroy :destroy_attached_files
-
-      class_attribute :encoder_definitions
-      (self.encoder_definitions ||= {})[name] = options
     end
 
   end
@@ -37,12 +43,11 @@ module Zencodable
     def create_job
       if self.origin_url_changed?
         logger.debug "Origin URL changed. Creating new ZenCoder job."
-        if @job = Encoder::Job.create(self.origin_url, self.class.encoder_definitions)
-          logger.debug "ZenCoder job ID = #{@job.id}"
-          self.zencoder_job_id = @job.id
-          self.zencoder_job_status = 'new'
-          self.zencoder_job_created = Time.now
-          self.zencoder_job_finished = nil
+        if @job = Encoder::Job.create(origin_url, self.class.encoder_definitions)
+          zencoder_job_id = @job.id
+          zencoder_job_status = 'new'
+          zencoder_job_created = Time.now
+          zencoder_job_finished = nil
         end
       end
     end
@@ -50,8 +55,8 @@ module Zencodable
     def update_job
       self.zencoder_job_status = encoder_job.status
       self.zencoder_job_finished = encoder_job.finished_at
-      self.video_files = encoder_job.files.collect{ |file| VideoFile.new(file) } rescue []
-      self.video_thumbnails = encoder_job.thumbnails.collect{ |file| VideoThumbnail.new(file) } rescue []
+      video_files = encoder_job.files.collect{ |file| video_files_class.new(file) } rescue []
+      video_thumbnails = encoder_job.thumbnails.collect{ |file| video_thumbnails_class.new(file) } rescue []
       save
     end
 
@@ -59,9 +64,42 @@ module Zencodable
       self.video_files.where(:format => fmt).first
     end
 
+    def video_files
+      self.send(video_files_method)
+    end
+
+    def video_thumbnails
+      self.send(video_files_thumbnails_method)
+    end
+
+    def video_files= *args
+      self.send "#{video_files_method}=", *args
+    end
+
+    def video_thumbnails= *args
+      self.send("#{video_files_thumbnails_method}=", *args) if self.respond_to?(video_files_thumbnails_method)
+    end
+
+
     private
     def encoder_job
       @job ||= Encoder::Job.new(self.zencoder_job_id)
+    end
+
+    def video_files_method
+      self.class.encoder_target_association
+    end
+
+    def video_files_thumbnails_method
+      self.class.encoder_thumbnails_association
+    end
+
+    def video_files_class
+      self.class.reflect_on_all_associations(:has_many).detect{ |reflection| reflection.name == self.class.encoder_target_association }.klass
+    end
+
+    def video_thumbnails_class
+      self.class.reflect_on_all_associations(:has_many).detect{ |reflection| reflection.name == self.class.encoder_thumbnails_association }.klass
     end
 
   end
@@ -70,6 +108,7 @@ module Zencodable
 
   module Encoder
     include Zencoder
+
     class Job < Zencoder::Job
 
       def self.config
@@ -81,6 +120,7 @@ module Zencodable
                          :outputs => build_encoder_output_options(origin, encoder_definitions))
         if response.code == 201
           id = response.body['id']
+          logger.debug "ZenCoder job ID = #{id}"
           self.new(id)
         end
       end
@@ -90,6 +130,33 @@ module Zencodable
       def initialize(id)
         @id = id
         @job_detail = {}
+      end
+
+      def self.s3_url definitions
+          path = definitions[:path] # TODO interpolate like paperclip?
+          "s3://#{config[:bucket_name]}.s3.amazonaws.com/#{path}"
+      end
+
+      def self.build_encoder_output_options(origin, definitions)
+
+        formats = definitions[:formats] || [:ogg]
+        size = definitions[:output_dimensions] || '400x300'
+
+        defaults = { :public => true,
+                     :device_profile => "mobile/advanced",
+                     :size => size
+                   }
+        defaults = defaults.merge(definitions[:options]) if definitions[:options]
+
+        if definitions[:thumbnails]
+          defaults[:thumbnails] = {:aspect_mode => 'crop',
+                                   :base_url => s3_url(definitions),
+                                   :size => size
+                                  }.merge(definitions[:thumbnails])
+        end
+
+        # basename = origin.match( %r|([^/][^/\?.]+)[^/]*\z| )[1] # matches filename without extension
+        formats.collect{ |f| defaults.merge( :format => f.to_s, :label => f.to_s, :base_url => s3_url ) }
       end
 
       def details
@@ -147,30 +214,6 @@ module Zencodable
           end
 
         end
-      end
-
-      def self.build_encoder_output_options(origin, definitions)
-
-        s3_url = definitions[:s3_url] # TODO interpolate like paperclip
-
-        formats = definitions[:formats] || [:ogg]
-        size = definitions[:output_dimensions] || '400x300'
-
-        defaults = { :public => true,
-                     :device_profile => "mobile/advanced",
-                     :size => size
-                   }
-        defaults = defaults.merge(definitions[:options]) if definitions[:options]
-
-        if definitions[:thumbnails]
-          defaults[:thumbnails] = {:aspect_mode => 'crop',
-                                   :base_url => s3_url,
-                                   :size => size
-                                  }.merge(definitions[:thumbnails])
-        end
-
-        # basename = origin.match( %r|([^/][^/\?.]+)[^/]*\z| )[1] # matches filename without extension
-        formats.collect{ |f| defaults.merge( :format => f.to_s, :label => f.to_s, :base_url => s3_url ) }
       end
 
     end

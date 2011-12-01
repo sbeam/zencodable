@@ -53,14 +53,9 @@ class ZencodableTest < ActiveSupport::TestCase
     assert_equal file.url, vid.source_file_for('webm').url
   end
 
-
-
-#context "The main module" do
-#   should "respond to js_framework" do
-#     Apotomo.js_framework = :jquery
-#     assert_equal :jquery,  Apotomo.js_generator
-#   end
-# end
-
+  test "creates a correct S3 url" do
+    Video.encoder_definitions[:path] = "videos/encoded/:id/:title"
+    assert_equal "videos/zc/:id/", Zencodable::Encoder::Job.s3_url(Video.encoder_definitions)
+  end
 
 end

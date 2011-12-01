@@ -11,7 +11,17 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20111130193231) do
+ActiveRecord::Schema.define(:version => 20111201135457) do
+
+  create_table "video_file_thumbnails", :force => true do |t|
+    t.string   "thumbnail_file_name"
+    t.string   "thumbnail_content_type"
+    t.integer  "thumbnail_file_size"
+    t.datetime "thumbnail_updated_at"
+    t.integer  "video_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
 
   create_table "video_files", :force => true do |t|
     t.string   "url"
@@ -26,16 +36,6 @@ ActiveRecord::Schema.define(:version => 20111130193231) do
     t.integer  "file_size"
     t.string   "error_message"
     t.string   "state"
-  end
-
-  create_table "video_thumbnails", :force => true do |t|
-    t.string   "thumbnail_file_name"
-    t.string   "thumbnail_content_type"
-    t.integer  "thumbnail_file_size"
-    t.datetime "thumbnail_updated_at"
-    t.integer  "video_id"
-    t.datetime "created_at"
-    t.datetime "updated_at"
   end
 
   create_table "videos", :force => true do |t|
