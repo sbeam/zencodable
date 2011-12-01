@@ -53,9 +53,11 @@ class ZencodableTest < ActiveSupport::TestCase
     assert_equal file.url, vid.source_file_for('webm').url
   end
 
-# test "creates a correct S3 url" do
-#   Video.encoder_definitions[:path] = "videos/encoded/:id/:title"
-#   assert_equal "videos/zc/:id/", Zencodable::Encoder::Job.s3_url(Video.encoder_definitions)
-# end
+  test "creates a correct S3 url" do
+    path = "videos/encoded/:basename"
+    origin_url = 'http://foo.com/somepath/2/4/Rainbows and puppies [HD].with unicorns.mov'
+    bucket = Zencodable::Encoder::Job.config[:bucket]
+    assert_equal "s3://#{bucket}.s3.amazonaws.com/videos/encoded/rainbows-and-puppies-hd.with-unicorns/", Zencodable::Encoder::Job.s3_url(origin_url, path)
+  end
 
 end

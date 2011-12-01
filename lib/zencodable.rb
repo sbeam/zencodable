@@ -132,15 +132,18 @@ module Zencodable
         @job_detail = {}
       end
 
-      def self.s3_url definitions
-          path = definitions[:path] # TODO interpolate like paperclip?
-          "s3://#{config[:bucket_name]}.s3.amazonaws.com/#{path}"
+      def self.s3_url origin_url, path
+        basename = origin_url.match( %r|([^/][^/\?]+)[^/]*\.[^.]+\z| )[1] # matches filename without extension
+        basename = basename.downcase.squish.gsub(/\s+/, '-').gsub(/[^\w\d_.-]/, '')
+        path = path.gsub(%r|:basename\b|, basename)
+        "s3://#{self.config[:bucket]}.s3.amazonaws.com/#{path}/"
       end
 
       def self.build_encoder_output_options(origin, definitions)
 
         formats = definitions[:formats] || [:ogg]
         size = definitions[:output_dimensions] || '400x300'
+        base_url = s3_url(origin, definitions[:path])
 
         defaults = { :public => true,
                      :device_profile => "mobile/advanced",
@@ -150,13 +153,12 @@ module Zencodable
 
         if definitions[:thumbnails]
           defaults[:thumbnails] = {:aspect_mode => 'crop',
-                                   :base_url => s3_url(definitions),
+                                   :base_url => base_url,
                                    :size => size
                                   }.merge(definitions[:thumbnails])
         end
 
-        # basename = origin.match( %r|([^/][^/\?.]+)[^/]*\z| )[1] # matches filename without extension
-        formats.collect{ |f| defaults.merge( :format => f.to_s, :label => f.to_s, :base_url => s3_url ) }
+        formats.collect{ |f| defaults.merge( :format => f.to_s, :label => f.to_s, :base_url => base_url ) }
       end
 
       def details
