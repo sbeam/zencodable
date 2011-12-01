@@ -1,10 +1,10 @@
 require 'test_helper'
-require 'generators/zencodable/zencodable_generator'
+require 'generators/zencodable/migration_generator'
 
 class ZencodableGeneratorTest < Rails::Generators::TestCase
   destination Rails.root
   destination File.join(Rails.root, "tmp")
-  tests ::Zencodable::Generators::Migrate
+  tests ::Zencodable::Generators::Migration
   setup :prepare_destination
 
   test "creates a migration for the output files model" do

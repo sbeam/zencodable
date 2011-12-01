@@ -3,7 +3,7 @@ require 'rails/generators/named_base'
 
 module Zencodable
   module Generators
-    class Migrate < ::Rails::Generators::NamedBase
+    class Migration < ::Rails::Generators::NamedBase
       include Rails::Generators::Migration
 
       desc "creates migrations to create tables for the models that hold the encoded video files and thumbnails"
