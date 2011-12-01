@@ -22,7 +22,6 @@ Gem::Specification.new do |s|
   s.add_dependency "aws-s3"
   s.add_dependency "zencoder"
   s.add_dependency "typhoeus"
-  s.add_dependency "zencoder"
 
   #s.add_development_dependency "rspec", "~> 2.6"
   s.add_development_dependency "rspec-rails", "~> 2.6"
