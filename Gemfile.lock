@@ -6,7 +6,6 @@ PATH
       rails (~> 3.1.0)
       typhoeus
       zencoder
-      zencoder
 
 GEM
   remote: http://rubygems.org/
