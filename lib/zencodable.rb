@@ -4,9 +4,8 @@ module Zencodable
   extend ActiveSupport::Concern
 
   included do
-    #logger.warn "Bytes move down a wire. The codec is available. A video plays."
     class_attribute :encoder_definitions
-    class_attribute :encoder_target_association
+    class_attribute :encoder_output_files_association
     class_attribute :encoder_thumbnails_association
   end
 
@@ -14,9 +13,9 @@ module Zencodable
 
     def has_video_encodings target_association, options = {}
       self.encoder_definitions = options
-      self.encoder_target_association = target_association
+      self.encoder_output_files_association = target_association
 
-      has_many self.encoder_target_association, :dependent => :destroy
+      has_many self.encoder_output_files_association, :dependent => :destroy
 
       unless options[:thumbnails].blank?
         self.encoder_thumbnails_association = "#{target_association.to_s.singularize}_thumbnails".to_sym
@@ -25,6 +24,7 @@ module Zencodable
 
       before_save :create_job
 
+      # TODO cleanup
       #before_destroy :prepare_for_destroy
       #after_destroy :destroy_attached_files
     end
@@ -32,6 +32,7 @@ module Zencodable
   end
 
   module InstanceMethods
+
     def job_status
       unless ['finished','failed'].include? zencoder_job_status
         logger.debug "Unfinished job found. Updating details."
@@ -87,15 +88,16 @@ module Zencodable
     end
 
     def video_files_method
-      self.class.encoder_target_association
+      self.class.encoder_output_files_association
     end
 
     def video_files_thumbnails_method
       self.class.encoder_thumbnails_association
     end
 
+    # need to know the Class of the associations so we can instantiate some when job is complete.
     def video_files_class
-      self.class.reflect_on_all_associations(:has_many).detect{ |reflection| reflection.name == self.class.encoder_target_association }.klass
+      self.class.reflect_on_all_associations(:has_many).detect{ |reflection| reflection.name == self.class.encoder_output_files_association }.klass
     end
 
     def video_thumbnails_class
@@ -111,55 +113,62 @@ module Zencodable
 
     class Job < Zencoder::Job
 
-      def self.config
-        @@config ||= YAML.load_file("#{Rails.root}/config/amazon_s3.yml")[Rails.env].symbolize_keys
-      end
-
-      def self.create(origin, encoder_definitions)
-        response = super(:input => origin,
-                         :outputs => build_encoder_output_options(origin, encoder_definitions))
-        if response.code == 201
-          id = response.body['id']
-          logger.debug "ZenCoder job ID = #{id}"
-          self.new(id)
-        end
-      end
-
       attr_accessor :id
+
+      class << self
+
+        def create(origin, encoder_definitions)
+          response = super(:input => origin,
+                           :outputs => build_encoder_output_options(origin, encoder_definitions))
+          if response.code == 201
+            id = response.body['id']
+            logger.debug "ZenCoder job ID = #{id}"
+            self.new(id, encoder_definitions)
+          end
+        end
+
+        def build_encoder_output_options(origin, definitions)
+
+          formats = definitions[:formats] || [:ogg]
+          size = definitions[:output_dimensions] || '400x300'
+          base_url = s3_url(origin, definitions[:s3_config], definitions[:path])
+
+          defaults = { :public => true,
+                       :device_profile => "mobile/advanced",
+                       :size => size
+                     }
+          defaults = defaults.merge(definitions[:options]) if definitions[:options]
+
+          if definitions[:thumbnails]
+            defaults[:thumbnails] = {:aspect_mode => 'crop',
+                                     :base_url => base_url,
+                                     :size => size
+                                    }.merge(definitions[:thumbnails])
+          end
+
+          formats.collect{ |f| defaults.merge( :format => f.to_s, :label => f.to_s, :base_url => base_url ) }
+        end
+
+        def s3_url origin_url, s3_config_file, path
+          basename = origin_url.match( %r|([^/][^/\?]+)[^/]*\.[^.]+\z| )[1] # matches filename without extension
+          basename = basename.downcase.squish.gsub(/\s+/, '-').gsub(/[^\w\d_.-]/, '') # cheap/ugly to_url
+          path = path.gsub(%r|:basename\b|, basename)
+          "s3://#{s3_bucket_name(s3_config_file)}.s3.amazonaws.com/#{path}/"
+        end
+
+        def s3_bucket_name s3_config_file
+          s3_config_file ||= "#{Rails.root}/config/s3.yml"
+          @s3_config ||= YAML.load_file(s3_config_file)[Rails.env].symbolize_keys
+          @s3_config[:bucket_name]
+        end
+
+      end
 
       def initialize(id)
         @id = id
         @job_detail = {}
       end
 
-      def self.s3_url origin_url, path
-        basename = origin_url.match( %r|([^/][^/\?]+)[^/]*\.[^.]+\z| )[1] # matches filename without extension
-        basename = basename.downcase.squish.gsub(/\s+/, '-').gsub(/[^\w\d_.-]/, '')
-        path = path.gsub(%r|:basename\b|, basename)
-        "s3://#{self.config[:bucket]}.s3.amazonaws.com/#{path}/"
-      end
-
-      def self.build_encoder_output_options(origin, definitions)
-
-        formats = definitions[:formats] || [:ogg]
-        size = definitions[:output_dimensions] || '400x300'
-        base_url = s3_url(origin, definitions[:path])
-
-        defaults = { :public => true,
-                     :device_profile => "mobile/advanced",
-                     :size => size
-                   }
-        defaults = defaults.merge(definitions[:options]) if definitions[:options]
-
-        if definitions[:thumbnails]
-          defaults[:thumbnails] = {:aspect_mode => 'crop',
-                                   :base_url => base_url,
-                                   :size => size
-                                  }.merge(definitions[:thumbnails])
-        end
-
-        formats.collect{ |f| defaults.merge( :format => f.to_s, :label => f.to_s, :base_url => base_url ) }
-      end
 
       def details
         if @job_detail.empty? and @id
