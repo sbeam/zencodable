@@ -14,4 +14,4 @@ Rails.backtrace_cleaner.remove_silencers!
 ActiveRecord::Base.logger = Logger.new(plugin_test_dir + "/debug.log")
 
 # Load support files
-Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each { |f| require f }
+#Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each { |f| require f }
