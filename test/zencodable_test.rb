@@ -15,7 +15,7 @@ class ZencodableTest < ActiveSupport::TestCase
   end
 
   test "updates video files from the Job when job details are updated" do
-    testurl = 'http://s3.com/1/2/3.flv'
+    testurl = 'http://s3.com/6/7/8.flv'
     Zencodable::Encoder::Job.any_instance.stubs(:status => 'finished', :files => [{:url => testurl, :format => 'flv'}])
     vid = Factory :video, :zencoder_job_status => 'processing'
 
@@ -36,14 +36,14 @@ class ZencodableTest < ActiveSupport::TestCase
   end
 
   test "creates a new zencoder job when origin url is changed" do
-    Zencodable::Encoder::Job.stubs(:create).returns(Zencodable::Encoder::Job.new('123'))
-
     vid = Factory :video
-    vid.origin_url = 'http://foo.com/1/2/4'
-    assert vid.origin_url_changed?
 
+    Zencodable::Encoder::Job.expects(:create).returns(Zencodable::Encoder::Job.new('123'))
+
+    vid.origin_url = 'http://foo.com/1/2/4'
     vid.save
-    assert_not_nil vid.zencoder_job_id
+
+    assert_equal '123', vid.zencoder_job_id
     assert_equal 'new', vid.zencoder_job_status
   end
 
@@ -53,9 +53,9 @@ class ZencodableTest < ActiveSupport::TestCase
     assert_equal file.url, vid.source_file_for('webm').url
   end
 
-  test "creates a correct S3 url" do
-    Video.encoder_definitions[:path] = "videos/encoded/:id/:title"
-    assert_equal "videos/zc/:id/", Zencodable::Encoder::Job.s3_url(Video.encoder_definitions)
-  end
+# test "creates a correct S3 url" do
+#   Video.encoder_definitions[:path] = "videos/encoded/:id/:title"
+#   assert_equal "videos/zc/:id/", Zencodable::Encoder::Job.s3_url(Video.encoder_definitions)
+# end
 
 end

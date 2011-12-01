@@ -44,10 +44,10 @@ module Zencodable
       if self.origin_url_changed?
         logger.debug "Origin URL changed. Creating new ZenCoder job."
         if @job = Encoder::Job.create(origin_url, self.class.encoder_definitions)
-          zencoder_job_id = @job.id
-          zencoder_job_status = 'new'
-          zencoder_job_created = Time.now
-          zencoder_job_finished = nil
+          self.zencoder_job_id = @job.id
+          self.zencoder_job_status = 'new'
+          self.zencoder_job_created = Time.now
+          self.zencoder_job_finished = nil
         end
       end
     end
@@ -55,8 +55,8 @@ module Zencodable
     def update_job
       self.zencoder_job_status = encoder_job.status
       self.zencoder_job_finished = encoder_job.finished_at
-      video_files = encoder_job.files.collect{ |file| video_files_class.new(file) } rescue []
-      video_thumbnails = encoder_job.thumbnails.collect{ |file| video_thumbnails_class.new(file) } rescue []
+      self.video_files = encoder_job.files.collect{ |file| video_files_class.new(file) } rescue []
+      self.video_thumbnails = encoder_job.thumbnails.collect{ |file| video_thumbnails_class.new(file) } rescue []
       save
     end
 
