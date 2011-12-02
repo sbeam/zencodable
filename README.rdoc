@@ -1,8 +1,0 @@
-= Zencodable
-
-**WIP WIP WACK**
-
-It's going to give you a `has_video_encodings` method for your models, and
-you shall smile.
-
-Uses MIT-LICENSE.
