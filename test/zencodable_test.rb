@@ -57,8 +57,23 @@ class ZencodableTest < ActiveSupport::TestCase
     path = "videos/encoded/:basename"
     origin_url = 'http://foo.com/somepath/2/4/Rainbows and puppies [HD].with unicorns.mov'
     s3_config = '/some/path/to/s3.yml'
-    Zencodable::Encoder::Job.expects(:s3_bucket_name).with(s3_config).returns('zenbucket')
-    assert_equal "s3://zenbucket.s3.amazonaws.com/videos/encoded/rainbows-and-puppies-hd.with-unicorns/", Zencodable::Encoder::Job.s3_url(origin_url, s3_config, path)
+    bucket = 'zenbucket'
+    assert_equal "s3://zenbucket.s3.amazonaws.com/videos/encoded/rainbows-and-puppies-hd.with-unicorns/", Zencodable::Encoder::Job.s3_url(origin_url, bucket, path)
+  end
+
+  test "builds the correct default values" do
+    origin_url = 'http://foo.com/somepath/2/4/super_tricks.mov'
+
+    default_settings = [{
+        :public => true,
+        :format => "mp4",
+        :label => "mp4",
+        :base_url => "s3://zenbucket.s3.amazonaws.com/videos/encoded/"
+    }]
+
+    minimal_config = {:bucket => 'zenbucket', :path => 'videos/encoded'}
+
+    assert_equal default_settings, Zencodable::Encoder::Job.build_encoder_output_options(origin_url, minimal_config)
   end
 
 end
