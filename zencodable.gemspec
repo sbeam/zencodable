@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.version     = Zencodable::VERSION
   s.authors     = ["Sam Beam"]
   s.email       = ["sbeam@onsetcorps.net"]
-  s.homepage    = "http://onsetcorps.net"
+  s.homepage    = "https://github.com/sbeam/zencodable"
   s.summary     = "mindful multiformat video encoding for AR models with Zencoder API"
   s.description = "provides a `has_video_encodings` class method to your models that \
   allows you to configure and set up any Zencoder settings you will need \
