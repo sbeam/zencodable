@@ -24,6 +24,7 @@ module Zencodable
       end
 
       def create_migration_files
+        migration_template 'add_zencoder_job_tracking_columns.rb', "db/migrate/add_zencoder_job_tracking_columns_to_#{name.tableize}"
         migration_template 'create_association_table.rb', "db/migrate/create_#{association_name}"
         unless options.skip_thumbnails?
           migration_template 'create_association_thumbnails_table.rb', "db/migrate/create_#{association_name}_thumbnails"

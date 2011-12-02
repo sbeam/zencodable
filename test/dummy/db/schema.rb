@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20111201135457) do
+ActiveRecord::Schema.define(:version => 20111202212901) do
 
   create_table "video_file_thumbnails", :force => true do |t|
     t.string   "thumbnail_file_name"
