@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   uploaded source file. Uses the Zencoder API (zencoder.com) and (as of now) expects \
   you to have an S3 bucket where we can ask zencoder to place the generated files."
 
-  s.files = Dir["{app,config,db,lib}/**/*"] + ["MIT-LICENSE", "Rakefile", "README.rdoc"]
+  s.files = Dir["{app,config,db,lib}/**/*"] + ["MIT-LICENSE", "Rakefile", "README.md"]
   s.test_files = Dir["test/**/*"]
 
   s.add_dependency "rails", "~> 3.1.0"
