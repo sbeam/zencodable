@@ -141,11 +141,13 @@ module Zencodable
 
           defaults = defaults.merge(settings[:options]) if settings[:options]
 
-          if settings[:thumbnails]
-            defaults[:thumbnails] = {:base_url => s3_base_url}.merge(settings[:thumbnails])
-          end
+          output_settings = formats.collect{ |f| defaults.merge( :format => f.to_s, :label => f.to_s, :base_url => s3_base_url ) }
 
-          formats.collect{ |f| defaults.merge( :format => f.to_s, :label => f.to_s, :base_url => s3_base_url ) }
+          if settings[:thumbnails]
+            output_settings[0][:thumbnails] = {:base_url => s3_base_url}.merge(settings[:thumbnails])
+          end
+          output_settings
+
         end
 
         def s3_url origin_url, bucket, path
