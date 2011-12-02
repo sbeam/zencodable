@@ -45,6 +45,7 @@ module Zencodable
       if self.origin_url_changed?
         logger.debug "Origin URL changed. Creating new ZenCoder job."
         if @job = Encoder::Job.create(origin_url, self.class.encoder_definitions)
+          logger.debug "ZenCoder job created, ID = #{@job.id}"
           self.zencoder_job_id = @job.id
           self.zencoder_job_status = 'new'
           self.zencoder_job_created = Time.now
@@ -121,9 +122,8 @@ module Zencodable
           response = super(:input => origin,
                            :outputs => build_encoder_output_options(origin, encoder_definitions))
           if response.code == 201
-            id = response.body['id']
-            logger.debug "ZenCoder job ID = #{id}"
-            self.new(id, encoder_definitions)
+            job_id = response.body['id']
+            self.new(job_id)
           end
         end
 
@@ -164,8 +164,8 @@ module Zencodable
 
       end
 
-      def initialize(id)
-        @id = id
+      def initialize(job_id)
+        @id = job_id
         @job_detail = {}
       end
 
