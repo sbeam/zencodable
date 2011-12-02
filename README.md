@@ -1,4 +1,4 @@
-= Zencodable
+# Zencodable
 
 Gives you `has_video_encodings` method for your models, that sets up jobs to encode multiple video container/codecs using [Zencoder](http://zencoder.com). It tells Zencoder to place the output files in some bucket in your S3 account. From there, they are yours to enjoy forever.
 
@@ -15,19 +15,23 @@ class Video < ActiveRecord::Base
 end
 ```
 
-== Requirements
+## Requirements
 
-*developed on ruby 1.9.2-p290 and Rails 3.1.3*
+_developed on ruby 1.9.2-p290 and Rails 3.1.3_
 
 1. A [Zencoder][1] account of course, testing or full.
 
 2. A working Amazon S3 account with a shiny new bucket ready to receive video files.
 
-3. this gem (zencodable) in your gemfile.
+3. this gem (zencodable) in your gemfile, and typhoeus.
 
-= Setup
+    gem 'zencodable'
+    gem 'typhoeus'
 
-== Zencoder API keys
+# Setup
+
+## Zencoder API keys
+
 the zencoder/zencoder-rb gem expects access to your Zencoder API keys in some fashion. Also, we need to use dbalatero/typhoeus for HTTP stuffs, that's the only way Zencoder will work with S3. So, I like something in `config/initializers` like
 
     # zencoder setup
@@ -39,12 +43,13 @@ the zencoder/zencoder-rb gem expects access to your Zencoder API keys in some fa
 
     Zencoder::HTTP.http_backend = Zencoder::HTTP::Typhoeus
 
-== Bucket policy
+## Bucket policy
+
 The bucket needs to have a custom policy to allow Zencoder to place the output videos on it. [Here is a guide on Zencoder's site, follow it](https://app.zencoder.com/docs/guides/getting-started/working-with-s3)
 
 (There is currently a branch where an attempt to create a rake task to auto-install this policy was made. Unfortunately it seems the marcel/aws-s3 gem doesn't know how to update a bucket policy after all, it just manages the ACLs. It seems fog can't do that either. Oh well, you'll have to paste in the policy.)
 
-== Run the generator
+## Run the generator
 
     rails g zencodable:migrations <Model> <association_name>
 
@@ -58,9 +63,10 @@ you can add a `--skip-thumbnails` option if you don't want to use the auto-gener
 
 now do a `rake db:migrate`
 
-== How to use
+## How to use
 
-=== Configure model and encoding options
+### Configure model and encoding options
+
 add something like the above `has_video_encodings` class method to your model (the generator does not try to do this for you).
 
 The options should include a `:s3_config` key that gives a location of a YAML file containing your S3 credentials, which should contain a 'bucket' key (you already have one, right?) Actually, all we need from that is the bucket name, so you can instead use a `:bucket` key to give the name of the bucket where the output files should be placed.
@@ -71,7 +77,8 @@ The `:path` option can be any path within that bucket. It can contain a `:basena
 
 The other options are all those that can be handled by Zencoder. More info can be found on [:thumbnails](https://app.zencoder.com/docs/api/encoding/thumbnails), [:output_dimensions](https://app.zencoder.com/docs/api/encoding/resolution/size) and other output settings [:options](https://app.zencoder.com/docs/api/encoding)
 
-=== Give it a source URL
+### Give it a source URL
+
 All that's needed to trigger the Zencoder job is to change the `origin_url` value of your model, and then save. That will be picked up, sent to Zencoder, and your job will be started with your desired settings. 
 
 As the job runs, you can check `Model.job_status` as you see fit, if the job is neither failed nor finished, it will request an update from Zencoder for that Job.
@@ -83,9 +90,9 @@ Individual files will complete at different times, so you can also check the `st
     vid.save
     vid.job_status # "new"
     ... 
-    vid.job_status # "in progress"
+    vid.job_status # "waiting"
     ... 
-    vid.job_status # "in progress"
+    vid.job_status # "processing"
     vid.video_encoded_files.collect { |v| [v.format, v.state] }
     ... 
     vid.job_status # "finished"
@@ -93,14 +100,14 @@ Individual files will complete at different times, so you can also check the `st
     vid.video_encoded_file_thumbnails.size # 2
     
 
-== TODO
+## TODO
 
 * change name of `origin_url` column and make sure its added in the migrations
 * rake task to generate a working bucket policy (even if it has to be pasted in)
 * background jobs to update the ZC job progress, with events/notifications
 * is s3_url basename sanitization going to be good for non-ASCII filenames? no.
 
-== License
+## License
 
 Uses MIT-LICENSE. You are free to use this as you like, but don't expect anything.
 
