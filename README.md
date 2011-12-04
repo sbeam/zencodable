@@ -30,9 +30,11 @@ _developed on ruby 1.9.2-p290 and Rails 3.1.3_
 
 # Setup
 
-## Zencoder API keys
+## Zencoder API keys and initializer settings
 
-the zencoder/zencoder-rb gem expects access to your Zencoder API keys in some fashion. Also, we need to use dbalatero/typhoeus for HTTP stuffs, that's the only way Zencoder will work with S3. So, I like something in `config/initializers` like
+the [zencoder](https://github.com/zencoder/zencoder-rb) gem expects access to your Zencoder API keys in some fashion. Also, [typhoeus](https://github.com/dbalatero/typhoeus) is a big improvement for HTTP stuffs. Thirdly, Zencoder's API v2 (soon to be released as of 2011-12-4) is full of options, has more progress information and much more hotness - so let's use that!. 
+
+So, I like something in `config/initializers/zencoder.rb` like
 
     # zencoder setup
     if Rails.env == 'production'
@@ -42,6 +44,8 @@ the zencoder/zencoder-rb gem expects access to your Zencoder API keys in some fa
     end
 
     Zencoder::HTTP.http_backend = Zencoder::HTTP::Typhoeus
+
+    Zencoder.base_url = 'https://app.zencoder.com/api/v2'
 
 ## Bucket policy
 
