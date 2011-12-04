@@ -102,9 +102,13 @@ Individual files will complete at different times, so you can also check the `st
 
 ## TODO
 
-* change name of `origin_url` column and make sure its added in the migrations
 * rake task to generate a working bucket policy (even if it has to be pasted in)
+* set timeouts on update_job
+* create DJ and/or Resque workers to handle job submission (should be optional dependencies though)
+* generator to install config/initializer
+* remove files from S3 when object is deleted
 * background jobs to update the ZC job progress, with events/notifications
+* use API v2 features to get more interesting info on job progress
 * is s3_url basename sanitization going to be good for non-ASCII filenames? no.
 
 ## License
