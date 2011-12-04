@@ -127,38 +127,40 @@ module Zencodable
           end
         end
 
-        def build_encoder_output_options(origin, definitions)
+        def build_encoder_output_options(origin, settings)
 
-          formats = definitions[:formats] || [:ogg]
-          size = definitions[:output_dimensions] || '400x300'
-          base_url = s3_url(origin, definitions[:s3_config], definitions[:path])
+          formats = settings[:formats] || [:mp4]
 
-          defaults = { :public => true,
-                       :device_profile => "mobile/advanced",
-                       :size => size
-                     }
-          defaults = defaults.merge(definitions[:options]) if definitions[:options]
+          bucket_name = settings[:bucket] || s3_bucket_name(settings[:s3_config])
 
-          if definitions[:thumbnails]
-            defaults[:thumbnails] = {:aspect_mode => 'crop',
-                                     :base_url => base_url,
-                                     :size => size
-                                    }.merge(definitions[:thumbnails])
+          s3_base_url = s3_url(origin, bucket_name, settings[:path])
+
+          defaults = { :public => true }
+
+          defaults[:size] = settings[:output_dimensions] if settings[:output_dimensions]
+
+          defaults = defaults.merge(settings[:options]) if settings[:options]
+
+          output_settings = formats.collect{ |f| defaults.merge( :format => f.to_s, :label => f.to_s, :base_url => s3_base_url ) }
+
+          if settings[:thumbnails]
+            output_settings[0][:thumbnails] = {:base_url => s3_base_url}.merge(settings[:thumbnails])
           end
+          output_settings
 
-          formats.collect{ |f| defaults.merge( :format => f.to_s, :label => f.to_s, :base_url => base_url ) }
         end
 
-        def s3_url origin_url, s3_config_file, path
+        def s3_url origin_url, bucket, path
           basename = origin_url.match( %r|([^/][^/\?]+)[^/]*\.[^.]+\z| )[1] # matches filename without extension
           basename = basename.downcase.squish.gsub(/\s+/, '-').gsub(/[^\w\d_.-]/, '') # cheap/ugly to_url
           path = path.gsub(%r|:basename\b|, basename)
-          "s3://#{s3_bucket_name(s3_config_file)}.s3.amazonaws.com/#{path}/"
+          "s3://#{bucket}.s3.amazonaws.com/#{path}/"
         end
 
         def s3_bucket_name s3_config_file
           s3_config_file ||= "#{Rails.root}/config/s3.yml"
           @s3_config ||= YAML.load_file(s3_config_file)[Rails.env].symbolize_keys
+          puts @s3_config.inspect
           @s3_config[:bucket_name]
         end
 
