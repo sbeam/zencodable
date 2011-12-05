@@ -26,13 +26,13 @@ _developed on ruby 1.9.2-p290 and Rails 3.1.3_
 3. this gem (zencodable) in your gemfile, and typhoeus.
 
     gem 'zencodable'
-    gem 'typhoeus'
+    gem 'typhoeus' # NOTE: for heroku deploys, pin to 0.2.4 https://github.com/dbalatero/typhoeus/issues/123
 
 # Setup
 
 ## Zencoder API keys and initializer settings
 
-the [zencoder](https://github.com/zencoder/zencoder-rb) gem expects access to your Zencoder API keys in some fashion. Also, [typhoeus](https://github.com/dbalatero/typhoeus) is a big improvement for HTTP stuffs. Thirdly, Zencoder's API v2 (soon to be released as of 2011-12-4) is full of options, has more progress information and much more hotness - so let's use that!. 
+the [zencoder](https://github.com/zencoder/zencoder-rb) gem expects access to your Zencoder API keys in some fashion. Also, [typhoeus](https://github.com/dbalatero/typhoeus) is a big improvement for HTTP stuffs. Thirdly, Zencoder's API v2 (soon to be released as of 2011-12-4) is full of options, has more progress information and much more hotness - so let's use that!.
 
 So, I like something in `config/initializers/zencoder.rb` like
 
