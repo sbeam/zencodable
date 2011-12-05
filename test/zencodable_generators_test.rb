@@ -10,6 +10,7 @@ class ZencodableGeneratorTest < Rails::Generators::TestCase
   test "creates a migration for the output files model" do
     run_generator %w(KittehMovie encoded_kitteh_vids)
     assert_migration "db/migrate/zencodable_add_tracking_columns_and_tables.rb" do |migration|
+      assert_match /class ZencodableAddTrackingColumnsAndTables /, migration
       assert_match /create_table "encoded_kitteh_vids"/, migration
       assert_match /t\.integer\s+\"kitteh_movie_id\"/, migration
 

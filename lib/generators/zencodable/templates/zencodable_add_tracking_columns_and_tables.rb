@@ -1,4 +1,4 @@
-class AddZencoderJobTrackingColumns < ActiveRecord::Migration
+class ZencodableAddTrackingColumnsAndTables < ActiveRecord::Migration
   def change
     add_column :<%= name.tableize %>, :origin_url, :string
     add_column :<%= name.tableize %>, :zencoder_job_status, :string
