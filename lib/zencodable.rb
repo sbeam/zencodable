@@ -79,7 +79,7 @@ module Zencodable
     end
 
     def video_thumbnails= *args
-      self.send("#{video_files_thumbnails_method}=", *args) if self.respond_to?(video_files_thumbnails_method)
+      self.send("#{video_files_thumbnails_method}=", *args) if video_files_thumbnails_method
     end
 
 
