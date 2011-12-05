@@ -18,6 +18,7 @@ class ZencodableGeneratorTest < Rails::Generators::TestCase
       assert_match /t\.integer\s+\"kitteh_movie_id\"/, migration
 
       assert_match /add_column :kitteh_movies, :origin_url, :string/, migration
+      assert_match /add_column :kitteh_movies, :zencoder_job_id, :string/, migration
       assert_match /add_column :kitteh_movies, :zencoder_job_status, :string/, migration
       assert_match /add_column :kitteh_movies, :zencoder_job_created, :datetime/, migration
       assert_match /add_column :kitteh_movies, :zencoder_job_finished, :datetime/, migration
