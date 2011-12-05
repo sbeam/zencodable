@@ -75,7 +75,7 @@ add something like the above `has_video_encodings` class method to your model (t
 
 The options should include a `:s3_config` key that gives a location of a YAML file containing your S3 credentials, which should contain a 'bucket' key (you already have one, right?) Actually, all we need from that is the bucket name, so you can instead use a `:bucket` key to give the name of the bucket where the output files should be placed.
 
-The `:path` option can be any path within that bucket. It can contain a `:basename` token, which will be replaced with a sanitized, URL-encoded version of the original filename as uploaded. 
+The `:path` option can be any path within that bucket. It can contain a `:basename` token, which will be replaced with a sanitized, URL-encoded version of the original filename as uploaded.
 
 `:formats` is a list of output formats you'd like. [Supported formats and codecs](https://app.zencoder.com/docs/api/encoding/format-and-codecs/format)
 
@@ -83,7 +83,7 @@ The other options are all those that can be handled by Zencoder. More info can b
 
 ### Give it a source URL
 
-All that's needed to trigger the Zencoder job is to change the `origin_url` value of your model, and then save. That will be picked up, sent to Zencoder, and your job will be started with your desired settings. 
+All that's needed to trigger the Zencoder job is to change the `origin_url` value of your model, and then save. That will be picked up, sent to Zencoder, and your job will be started with your desired settings.
 
 As the job runs, you can check `Model.job_status` as you see fit, if the job is neither failed nor finished, it will request an update from Zencoder for that Job.
 
@@ -93,16 +93,16 @@ Individual files will complete at different times, so you can also check the `st
     vid.origin_url = 'http://sourcebucket.s3.amazonaws.com/largevideos/funny_kittehs[HD].mov'
     vid.save
     vid.job_status # "new"
-    ... 
+    ...
     vid.job_status # "waiting"
-    ... 
+    ...
     vid.job_status # "processing"
     vid.video_encoded_files.collect { |v| [v.format, v.state] }
-    ... 
+    ...
     vid.job_status # "finished"
     vid.video_encoded_files.size # 4
     vid.video_encoded_file_thumbnails.size # 2
-    
+
 
 ## TODO
 
