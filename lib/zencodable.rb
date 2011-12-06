@@ -57,8 +57,12 @@ module Zencodable
     def update_job
       self.zencoder_job_status = encoder_job.status
       self.zencoder_job_finished = encoder_job.finished_at
-      self.video_files = encoder_job.files.collect{ |file| video_files_class.new(file) } rescue []
-      self.video_thumbnails = encoder_job.thumbnails.collect{ |file| video_thumbnails_class.new(file) } rescue []
+      if encoded_files = encoder_job.files
+        self.video_files = encoded_files.collect{ |file| video_files_class.new(file) }
+      end
+      if (encoded_thumbs = encoder_job.thumbnails) and self.class.encoder_thumbnails_association
+        self.video_thumbnails = encoded_thumbs.collect{ |file| video_thumbnails_class.new(file) }
+      end
       save
     end
 
