@@ -17,6 +17,7 @@ class ZencodableAddTrackingColumnsAndTables < ActiveRecord::Migration
       t.integer  "file_size"
       t.string   "error_message"
       t.string   "state"
+      t.integer  "duration_sec"
       t.timestamps
     end
 
