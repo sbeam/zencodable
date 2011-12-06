@@ -120,6 +120,8 @@ module Zencodable
 
       attr_accessor :id
 
+      attr_accessor :mock_all_requests
+
       class << self
 
         def create(origin, encoder_definitions)
@@ -139,7 +141,7 @@ module Zencodable
 
           s3_base_url = s3_url(origin, bucket_name, settings[:path])
 
-          defaults = { :public => true }
+          defaults = { :public => true, :mock => self.mock_request? }
 
           defaults[:size] = settings[:output_dimensions] if settings[:output_dimensions]
 
@@ -166,6 +168,10 @@ module Zencodable
           @s3_config ||= YAML.load_file(s3_config_file)[Rails.env].symbolize_keys
           puts @s3_config.inspect
           @s3_config[:bucket_name]
+        end
+
+        def mock_request?
+          (Rails.env == 'test' || self.mock_all_requests)
         end
 
       end
