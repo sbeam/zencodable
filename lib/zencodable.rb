@@ -60,7 +60,7 @@ module Zencodable
       if encoded_files = encoder_job.files
         self.video_files = encoded_files.collect{ |file| video_files_class.new(file) }
       end
-      if (encoded_thumbs = encoder_job.thumbnails) and self.class.encoder_thumbnails_association
+      if self.class.encoder_thumbnails_association && (encoded_thumbs = encoder_job.thumbnails)
         self.video_thumbnails = encoded_thumbs.collect{ |file| video_thumbnails_class.new(file) }
       end
       save
