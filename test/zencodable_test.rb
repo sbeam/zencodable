@@ -68,6 +68,7 @@ class ZencodableTest < ActiveSupport::TestCase
         :public => true,
         :format => "mp4",
         :label => "mp4",
+        :mock => true,
         :base_url => "s3://zenbucket.s3.amazonaws.com/videos/encoded/"
     }]
 

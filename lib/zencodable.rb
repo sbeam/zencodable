@@ -120,9 +120,9 @@ module Zencodable
 
       attr_accessor :id
 
-      attr_accessor :mock_all_requests
-
       class << self
+
+        attr_accessor :mock_all_requests
 
         def create(origin, encoder_definitions)
           response = super(:input => origin,
