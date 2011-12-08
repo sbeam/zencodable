@@ -78,6 +78,7 @@ The options should include a `:s3_config` key that gives a location of a YAML fi
 `:formats` is a list of output formats you'd like. [Supported formats and codecs](https://app.zencoder.com/docs/api/encoding/format-and-codecs/format)
 
 The `:path` is the path within the bucket where the output files should be placed. It can contain one or more `:some_method` tokens, which will be replaced with the (String) results of calling the given method on your record. _i.e._, given
+
 ```ruby
 class Video < ActiveRecord::Base
   has_video_encodings :video_files, :path => 'some/path/on/s3/:project_id/:slug'
@@ -86,6 +87,7 @@ class Video < ActiveRecord::Base
   def slug; title.to_slug; end
 end
 ```
+
 the paths within your S3 bucket will look like `/some/path/on/s3/12493/lion-eats-kitteh/`. (the individual file/object names will be based on a sanitized version of the original file name)
 
 The other options are all those that can be handled by Zencoder. More info can be found on [:thumbnails](https://app.zencoder.com/docs/api/encoding/thumbnails), [:output_dimensions](https://app.zencoder.com/docs/api/encoding/resolution/size) and other output settings [:options](https://app.zencoder.com/docs/api/encoding)
