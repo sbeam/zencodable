@@ -54,41 +54,53 @@ class ZencodableTest < ActiveSupport::TestCase
   end
 
   test "creates a correct S3 url" do
-    path = "videos/encoded/:basename"
-    origin_url = 'http://foo.com/somepath/2/4/Rainbows and puppies [HD].with unicorns.mov'
-    s3_config = '/some/path/to/s3.yml'
-    bucket = 'zenbucket'
-    assert_equal "s3://zenbucket.s3.amazonaws.com/videos/encoded/rainbows-and-puppies-hd.with-unicorns/", Zencodable::Encoder::Job.s3_url(origin_url, bucket, path)
+    video_file = Factory :video, :origin_url => 'http://foo.com/somepath/2/4/Rainbows and puppies [HD].with unicorns.mov'
+    assert_equal "s3://zenbucket.s3.amazonaws.com/videos/encoded/", Zencodable::Encoder::Job.s3_url(video_file, 'zenbucket')
   end
 
   test "builds the correct default settings" do
-    origin_url = 'http://foo.com/somepath/2/4/super_tricks.mov'
+    video_file = Factory :video, :origin_url => 'http://foo.com/somepath/2/4/Rainbows and puppies [HD].with unicorns.mov'
 
     default_settings = [{
         :public => true,
         :format => "mp4",
         :label => "mp4",
         :mock => true,
+        :filename => 'rainbows-and-puppies-hd.with-unicorns.mp4',
         :base_url => "s3://zenbucket.s3.amazonaws.com/videos/encoded/"
     }]
 
-    minimal_config = {:bucket => 'zenbucket', :path => 'videos/encoded'}
+    Video.encoding_options = {:bucket => 'zenbucket', :path => 'videos/encoded'}
 
-    assert_equal default_settings, Zencodable::Encoder::Job.build_encoder_output_options(origin_url, minimal_config)
+    assert_equal default_settings, Zencodable::Encoder::Job.build_encoder_output_options(video_file)
   end
 
   test "builds correct settings when a thumbnails are requested" do
-    origin_url = 'http://foo.com/somepath/2/4/super_tricks.mov'
 
-    config = {:formats => [:ogg, :mp4], :bucket => 'zenbucket', :path => 'videos/encoded', :thumbnails => { :number => 4 }}
+    Video.encoding_options = {:formats => [:ogg, :mp4], :bucket => 'zenbucket', :path => 'videos/encoded', :thumbnails => { :number => 4 }}
+    video_file = Factory :video, :origin_url => 'http://foo.com/somepath/2/4/super_tricks.mov'
 
-    output_options = Zencodable::Encoder::Job.build_encoder_output_options(origin_url, config)
+    output_options = Zencodable::Encoder::Job.build_encoder_output_options(video_file)
 
     # there should be a thumbnails option set for the first format request
     assert_equal 4, output_options[0][:thumbnails][:number]
 
     # but not for any subsequent ones
     assert_nil output_options[1][:thumbnails]
+  end
+
+  test "interpolates model methods into the :path parameter" do
+    Video.encoding_options = {:formats => [:ogg, :mp4],
+                              :bucket => 'zenbucket',
+                              :path => 'videos/encoded/:rating/:title'}
+    Video.any_instance.stubs(:rating).returns('PG')
+    video_file = Factory :video, :title => 'Last of the Mohecans', :origin_url => 'http://foo.com/somepath/super kittehs!.mov'
+
+    output_options = Zencodable::Encoder::Job.build_encoder_output_options(video_file)
+
+    assert_equal 's3://zenbucket.s3.amazonaws.com/videos/encoded/PG/Last of the Mohecans/', output_options[0][:base_url]
+
+    assert_equal 'super-kittehs.ogg', output_options[0][:filename]
   end
 
 end

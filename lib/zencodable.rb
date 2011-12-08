@@ -4,7 +4,7 @@ module Zencodable
   extend ActiveSupport::Concern
 
   included do
-    class_attribute :encoder_definitions
+    class_attribute :encoding_options
     class_attribute :encoder_output_files_association
     class_attribute :encoder_thumbnails_association
   end
@@ -12,7 +12,7 @@ module Zencodable
   module ClassMethods
 
     def has_video_encodings target_association, options = {}
-      self.encoder_definitions = options
+      self.encoding_options = options
       self.encoder_output_files_association = target_association
 
       has_many self.encoder_output_files_association, :dependent => :destroy
@@ -44,7 +44,7 @@ module Zencodable
     def create_job
       if self.origin_url_changed?
         logger.debug "Origin URL changed. Creating new ZenCoder job."
-        if @job = Encoder::Job.create(origin_url, self.class.encoder_definitions)
+        if @job = Encoder::Job.create(self)
           logger.debug "ZenCoder job created, ID = #{@job.id}"
           self.zencoder_job_id = @job.id
           self.zencoder_job_status = 'new'
@@ -124,22 +124,22 @@ module Zencodable
 
         attr_accessor :mock_all_requests
 
-        def create(origin, encoder_definitions)
-          response = super(:input => origin,
-                           :outputs => build_encoder_output_options(origin, encoder_definitions))
+        def create origin_file
+          response = super(:input => origin_file.origin_url,
+                           :outputs => build_encoder_output_options(origin_file))
           if response.code == 201
             job_id = response.body['id']
             self.new(job_id)
           end
         end
 
-        def build_encoder_output_options(origin, settings)
+        def build_encoder_output_options origin_file
+
+          settings = origin_file.class.encoding_options
 
           formats = settings[:formats] || [:mp4]
 
-          bucket_name = settings[:bucket] || s3_bucket_name(settings[:s3_config])
-
-          s3_base_url = s3_url(origin, bucket_name, settings[:path])
+          s3_base_url = s3_url(origin_file, (settings[:bucket] || s3_bucket_name(settings[:s3_config])))
 
           defaults = { :public => true, :mock => self.mock_request? }
 
@@ -147,7 +147,10 @@ module Zencodable
 
           defaults = defaults.merge(settings[:options]) if settings[:options]
 
-          output_settings = formats.collect{ |f| defaults.merge( :format => f.to_s, :label => f.to_s, :base_url => s3_base_url ) }
+          output_settings = formats.collect{ |f| defaults.merge( :format => f.to_s,
+                                                                 :label => f.to_s,
+                                                                 :filename => file_basename(origin_file.origin_url) + ".#{f}",
+                                                                 :base_url => s3_base_url ) }
 
           if settings[:thumbnails]
             output_settings[0][:thumbnails] = {:base_url => s3_base_url}.merge(settings[:thumbnails])
@@ -156,17 +159,23 @@ module Zencodable
 
         end
 
-        def s3_url origin_url, bucket, path
+        def s3_url origin_file, bucket
+          path = origin_file.class.encoding_options[:path]
+          path.scan(%r|:[a-z]\w+\b|) do |match|
+            method = match.gsub(/^:/,'').to_sym
+            path = path.gsub(/#{match}/, origin_file.send(method)) if origin_file.respond_to?(method)
+          end
+          "s3://#{bucket}.s3.amazonaws.com/#{path.gsub(%r#/\z#, '')}/"
+        end
+
+        def file_basename origin_url
           basename = origin_url.match( %r|([^/][^/\?]+)[^/]*\.[^.]+\z| )[1] # matches filename without extension
-          basename = basename.downcase.squish.gsub(/\s+/, '-').gsub(/[^\w\d_.-]/, '') # cheap/ugly to_url
-          path = path.gsub(%r|:basename\b|, basename)
-          "s3://#{bucket}.s3.amazonaws.com/#{path}/"
+          basename.downcase.squish.gsub(/\s+/, '-').gsub(/[^\w\d_.-]/, '') # cheap/ugly to_url
         end
 
         def s3_bucket_name s3_config_file
           s3_config_file ||= "#{Rails.root}/config/s3.yml"
           @s3_config ||= YAML.load_file(s3_config_file)[Rails.env].symbolize_keys
-          puts @s3_config.inspect
           @s3_config[:bucket_name]
         end
 
