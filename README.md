@@ -55,11 +55,11 @@ The bucket needs to have a custom policy to allow Zencoder to place the output v
 
 ## Run the generator
 
-    rails g zencodable:migrations <Model> <association_name>
+    rails generate zencodable:migration <Model> <association_name>
 
 e.g.,
 
-    rails g zencodable:migrations KittehVideo kitteh_video_files
+    rails generate zencodable:migration KittehVideo kitteh_video_files
 
 This will actually create two `has_many` associations for your model - the `kitteh_video_files` for the output files themselves (one for each format), and the `kitteh_video_file_thumbnails` for the framegrab thumbnails that Zencoder can create (if configured).
 
