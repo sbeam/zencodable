@@ -23,10 +23,12 @@ _developed on ruby 1.9.2-p290 and Rails 3.1.3_
 
 2. A working Amazon S3 account with a shiny new bucket ready to receive video files.
 
-3. this gem (zencodable) in your gemfile, and typhoeus.
+3. this gem (zencodable) in your gemfile, and [typhoeus](https://github.com/dbalatero/typhoeus).
 
+```ruby
     gem 'zencodable'
     gem 'typhoeus' # NOTE: for heroku deploys, pin to 0.2.4 https://github.com/dbalatero/typhoeus/issues/123
+```
 
 # Setup
 
@@ -38,9 +40,9 @@ So, I like something in `config/initializers/zencoder.rb` like
 
     # zencoder setup
     if Rails.env == 'production'
-      Zencoder.api_key = 'therealdealkey00000000000000000'
+      Zencoder.api_key = 'yourproductionkey'
     else
-      Zencoder.api_key = 'keyfortestingonly00000000000000'
+      Zencoder.api_key = 'keyfortestingacct'
     end
 
     Zencoder::HTTP.http_backend = Zencoder::HTTP::Typhoeus
@@ -81,14 +83,16 @@ The `:path` is the path within the bucket where the output files should be place
 
 ```ruby
 class Video < ActiveRecord::Base
-  has_video_encodings :video_files, :path => 'some/path/on/s3/:project_id/:slug'
+  has_video_encodings :video_files, :path => 'some/path/:project_id/:slug'
 
   def project_id; project.id.to_s; end
   def slug; title.to_slug; end
 end
 ```
 
-the paths within your S3 bucket will look like `/some/path/on/s3/12493/lion-eats-kitteh/`. (the individual file/object names will be based on a sanitized version of the original file name)
+the paths within your S3 bucket will look like `/some/path/12493/lion-eats-kitteh/`.
+
+The individual object names will be based on a sanitized version of the original file name - all non-alphanumerics are removed.
 
 The other options are all those that can be handled by Zencoder. More info can be found on [:thumbnails](https://app.zencoder.com/docs/api/encoding/thumbnails), [:output_dimensions](https://app.zencoder.com/docs/api/encoding/resolution/size) and other output settings [:options](https://app.zencoder.com/docs/api/encoding)
 
