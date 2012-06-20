@@ -11,7 +11,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20111202212901) do
+ActiveRecord::Schema.define(:version => 20120620011015) do
 
   create_table "video_file_thumbnails", :force => true do |t|
     t.string   "thumbnail_file_name"
@@ -19,8 +19,8 @@ ActiveRecord::Schema.define(:version => 20111202212901) do
     t.integer  "thumbnail_file_size"
     t.datetime "thumbnail_updated_at"
     t.integer  "video_id"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at",             :null => false
+    t.datetime "updated_at",             :null => false
   end
 
   create_table "video_files", :force => true do |t|
@@ -40,13 +40,13 @@ ActiveRecord::Schema.define(:version => 20111202212901) do
 
   create_table "videos", :force => true do |t|
     t.string   "title"
+    t.datetime "created_at",            :null => false
+    t.datetime "updated_at",            :null => false
     t.string   "origin_url"
-    t.string   "zencoder_job_id"
     t.string   "zencoder_job_status"
     t.datetime "zencoder_job_created"
     t.datetime "zencoder_job_finished"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.string   "zencoder_job_id"
   end
 
 end
