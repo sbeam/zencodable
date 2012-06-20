@@ -31,87 +31,81 @@ module Zencodable
 
   end
 
-  module InstanceMethods
-
-    def job_status
-      unless ['finished','failed'].include? zencoder_job_status
-        logger.debug "Unfinished job found. Updating details."
-        update_job
-      end
-      self.zencoder_job_status
+  def job_status
+    unless ['finished','failed'].include? zencoder_job_status
+      logger.debug "Unfinished job found. Updating details."
+      update_job
     end
+    self.zencoder_job_status
+  end
 
-    def create_job
-      if self.origin_url_changed?
-        logger.debug "Origin URL changed. Creating new ZenCoder job."
-        if @job = Encoder::Job.create(self)
-          logger.debug "ZenCoder job created, ID = #{@job.id}"
-          self.zencoder_job_id = @job.id
-          self.zencoder_job_status = 'new'
-          self.zencoder_job_created = Time.now
-          self.zencoder_job_finished = nil
-        end
+  def create_job
+    if self.origin_url_changed?
+      logger.debug "Origin URL changed. Creating new ZenCoder job."
+      if @job = Encoder::Job.create(self)
+        logger.debug "ZenCoder job created, ID = #{@job.id}"
+        self.zencoder_job_id = @job.id
+        self.zencoder_job_status = 'new'
+        self.zencoder_job_created = Time.now
+        self.zencoder_job_finished = nil
       end
     end
+  end
 
-    def update_job
-      self.zencoder_job_status = encoder_job.status
-      self.zencoder_job_finished = encoder_job.finished_at
-      if encoded_files = encoder_job.files
-        self.video_files = encoded_files.collect{ |file| video_files_class.new(file) }
-      end
-      if self.class.encoder_thumbnails_association && (encoded_thumbs = encoder_job.thumbnails)
-        self.video_thumbnails = encoded_thumbs.collect{ |file| video_thumbnails_class.new(file) }
-      end
-      save
+  def update_job
+    self.zencoder_job_status = encoder_job.status
+    self.zencoder_job_finished = encoder_job.finished_at
+    if encoded_files = encoder_job.files
+      self.video_files = encoded_files.collect{ |file| video_files_class.new(file) }
     end
-
-    def source_file_for(fmt)
-      self.video_files.where(:format => fmt).first
+    if self.class.encoder_thumbnails_association && (encoded_thumbs = encoder_job.thumbnails)
+      self.video_thumbnails = encoded_thumbs.collect{ |file| video_thumbnails_class.new(file) }
     end
+    save
+  end
 
-    def video_files
-      self.send(video_files_method)
-    end
+  def source_file_for(fmt)
+    self.video_files.where(:format => fmt).first
+  end
 
-    def video_thumbnails
-      self.send(video_files_thumbnails_method)
-    end
+  def video_files
+    self.send(video_files_method)
+  end
 
-    def video_files= *args
-      self.send "#{video_files_method}=", *args
-    end
+  def video_thumbnails
+    self.send(video_files_thumbnails_method)
+  end
 
-    def video_thumbnails= *args
-      self.send("#{video_files_thumbnails_method}=", *args) if video_files_thumbnails_method
-    end
+  def video_files= *args
+    self.send "#{video_files_method}=", *args
+  end
 
-
-    private
-    def encoder_job
-      @job ||= Encoder::Job.new(self.zencoder_job_id)
-    end
-
-    def video_files_method
-      self.class.encoder_output_files_association
-    end
-
-    def video_files_thumbnails_method
-      self.class.encoder_thumbnails_association
-    end
-
-    # need to know the Class of the associations so we can instantiate some when job is complete.
-    def video_files_class
-      self.class.reflect_on_all_associations(:has_many).detect{ |reflection| reflection.name == self.class.encoder_output_files_association }.klass
-    end
-
-    def video_thumbnails_class
-      self.class.reflect_on_all_associations(:has_many).detect{ |reflection| reflection.name == self.class.encoder_thumbnails_association }.klass
-    end
-
+  def video_thumbnails= *args
+    self.send("#{video_files_thumbnails_method}=", *args) if video_files_thumbnails_method
   end
 
 
+  private
+  def encoder_job
+    @job ||= Encoder::Job.new(self.zencoder_job_id)
+  end
+
+  def video_files_method
+    self.class.encoder_output_files_association
+  end
+
+  def video_files_thumbnails_method
+    self.class.encoder_thumbnails_association
+  end
+
+  # need to know the Class of the associations so we can instantiate some when job is complete.
+  def video_files_class
+    self.class.reflect_on_all_associations(:has_many).detect{ |reflection| reflection.name == self.class.encoder_output_files_association }.klass
+  end
+
+  def video_thumbnails_class
+    self.class.reflect_on_all_associations(:has_many).detect{ |reflection| reflection.name == self.class.encoder_thumbnails_association }.klass
+  end
 
   module Encoder
     include Zencoder
